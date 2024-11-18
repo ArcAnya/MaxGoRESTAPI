@@ -19,8 +19,13 @@ func main() {
 }
 
 func getEvents(context *gin.Context) { // handler function for GET /events - using the gin context
-	events := models.GetAllEvents() // calling the GetAllEvents function from the models package
-	context.JSON(                   // sending a response back: status code + data (can by anything but often struct or map)
+	events, err := models.GetAllEvents() // calling the GetAllEvents function from the models package
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get events"})
+		return
+	}
+
+	context.JSON( // sending a response back: status code + data (can by anything but often struct or map)
 		http.StatusOK, // status code
 		events,        // map with a message key, ex: gin.H{"message": "Hello"}
 	)
@@ -40,7 +45,11 @@ func createEvent(context *gin.Context) {
 	event.ID = 1
 	event.UserID = 1
 
-	event.Save() // saving the event to the database
+	err = event.Save() // saving the event to the database
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save event"})
+		return
+	}
 
 	context.JSON(http.StatusCreated, gin.H{"message": "Event created successfully!", "event": event})
 
