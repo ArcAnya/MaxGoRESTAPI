@@ -7,12 +7,12 @@ import (
 )
 
 type Event struct {
-	ID          int       `json:"id"`
+	ID          int64     `json:"id"`
 	Title       string    `json:"title" binding:"required"`
 	Description string    `json:"description" binding:"required"`
 	Location    string    `json:"location" binding:"required"`
 	DateTime    time.Time `json:"datetime" binding:"required"`
-	UserID      int       `json:"user_id"`
+	UserID      int64     `json:"user_id"`
 }
 
 var events = []Event{}
@@ -37,7 +37,7 @@ func (e Event) Save() error {
 	}
 	id, err := result.LastInsertId()
 
-	e.ID = int(id)
+	e.ID = id
 
 	return err
 
@@ -77,4 +77,23 @@ func GetEventByID(id int64) (*Event, error) {
 	}
 
 	return &e, nil
+}
+
+func (e Event) UpdateEvent() error {
+	query := `
+	UPDATE events
+	SET title = ?, description = ?, location = ?, dateTime = ?, user_id = ?
+	WHERE id = ?
+	`
+	stmt, err := db.DB.Prepare(query) // Prepare the query to make it more efficient
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(e.Title, e.Description, e.Location, e.DateTime, e.UserID, e.ID)
+
+	return err
 }
