@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gocourse.com/restapi/models"
+	"gocourse.com/restapi/utils"
 )
 
 func getEvent(context *gin.Context) {
@@ -39,8 +40,23 @@ func getEvents(context *gin.Context) { // handler function for GET /events - usi
 }
 
 func createEvent(context *gin.Context) {
+
+	token := context.Request.Header.Get("Authorization") // getting the Authorization header from the request
+
+	if token == "" {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Authorization token is required"})
+		return
+	}
+
+	userId, err := utils.VerifyToken(token) // verifying the token
+
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Not Authorized: Invalid token"})
+		return
+	}
+
 	var event models.Event
-	err := context.ShouldBindJSON(&event) // binding the request body to the event struct.
+	err = context.ShouldBindJSON(&event) // binding the request body to the event struct.
 	// Should make sure the request body is JSON & of type Event
 	// ShouldBindJSON is pretty forgiving if data is missing => can make required by adding tags to the struct fields: `json:"title" binding:"required"`
 
@@ -49,8 +65,7 @@ func createEvent(context *gin.Context) {
 		return
 	}
 
-	event.ID = 1
-	event.UserID = 1
+	event.UserID = userId
 
 	err = event.Save() // saving the event to the database
 	if err != nil {
